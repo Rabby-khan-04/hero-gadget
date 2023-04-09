@@ -1,29 +1,46 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Link, useLoaderData } from "react-router-dom";
-import { getItemFromDB } from "../utilities/dataHandler";
+import {
+  clearCart,
+  getItemFromDB,
+  removeItemFromCart,
+} from "../utilities/dataHandler";
 import CartItem from "./Cards/CartItem";
+import { toast } from "react-hot-toast";
+import { CartContext } from "../App";
 
 const Cart = () => {
-  const pData = useLoaderData();
-  const [cart, setCart] = useState([]);
+  const [cart, setCart] = useContext(CartContext || []);
 
-  useEffect(() => {
-    const storedItem = getItemFromDB();
-    const cartItem = [];
-    for (const id in storedItem) {
-      const addedProduct = pData.find((product) => product.id === id);
-      addedProduct.quantity = storedItem[id];
-      cartItem.push(addedProduct);
+  let total = 10;
+  if (cart.length > 0) {
+    cart.map((product) => {
+      total = total + product.price * product.quantity;
+    });
+  }
+
+  const handleRemoveCart = (id) => {
+    const remining = cart.filter((product) => product.id !== id);
+    setCart(remining);
+    removeItemFromCart(id);
+    toast.error("Product Removed! 🔥");
+  };
+
+  const handleClearCart = () => {
+    clearCart();
+    setCart([]);
+    toast.error("Cart is empty! 🔥");
+  };
+
+  const handlePlaceOrder = () => {
+    if (cart.length > 0) {
+      clearCart();
+      setCart([]);
+      toast.success("Order Placed! 👍");
+    } else {
+      toast.error("Cart is empty! 🔥");
     }
-    setCart(cartItem);
-  }, []);
-
-  let total = 0;
-  cart.map((product) => {
-    total = total + product.price * product.quantity;
-  });
-
-  const handleRemoveCart = (id) => {}
+  };
 
   return (
     <div className="flex min-h-screen items-start justify-center bg-gray-100 text-gray-900">
@@ -33,7 +50,11 @@ const Cart = () => {
         </h2>
         <ul className="flex flex-col divide-y divide-gray-700">
           {cart.map((product) => (
-            <CartItem key={product.id} product={product} />
+            <CartItem
+              key={product.id}
+              product={product}
+              handleRemoveCart={handleRemoveCart}
+            />
           ))}
         </ul>
         <div className="space-y-1 text-right">
@@ -47,7 +68,11 @@ const Cart = () => {
         <div className="flex justify-end space-x-4">
           {cart.length > 0 ? (
             <>
-              <button type="button" className="btn-outlined">
+              <button
+                type="button"
+                className="btn-outlined"
+                onClick={handleClearCart}
+              >
                 Clear <span className="sr-only sm:not-sr-only">Cart</span>
               </button>
             </>
@@ -62,7 +87,7 @@ const Cart = () => {
           )}
 
           <button
-            onClick={() => alert("hello")}
+            onClick={handlePlaceOrder}
             type="button"
             className="btn-primary"
           >
